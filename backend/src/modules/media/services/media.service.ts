@@ -39,7 +39,7 @@ export class MediaService {
   }
 
   // File Operations
-  async uploadFile(file: Express.Multer.File, folderId?: string) {
+  async uploadFile(file: any, folderId?: string) {
     if (!file) {
       throw new BadRequestException('No file provided for upload.');
     }

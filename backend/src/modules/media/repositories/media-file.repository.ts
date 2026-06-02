@@ -47,7 +47,7 @@ export class MediaFileRepository {
     });
   }
 
-  async update(id: string, data: Prisma.MediaFileUpdateInput): Promise<MediaFile> {
+  async update(id: string, data: Prisma.MediaFileUncheckedUpdateInput): Promise<MediaFile> {
     return this.prisma.mediaFile.update({
       where: { id },
       data,

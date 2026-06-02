@@ -86,7 +86,7 @@ export class MediaController {
     },
   })
   async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body('folderId') folderId?: string,
   ) {
     return this.mediaService.uploadFile(file, folderId);

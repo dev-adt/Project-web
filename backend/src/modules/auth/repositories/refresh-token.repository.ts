@@ -16,7 +16,7 @@ export class RefreshTokenRepository {
     });
   }
 
-  async findByToken(token: string): Promise<RefreshToken | null> {
+  async findByToken(token: string): Promise<any> {
     return this.prisma.refreshToken.findUnique({
       where: { token },
       include: {
