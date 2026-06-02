@@ -104,6 +104,7 @@ services:
       dockerfile: Dockerfile
       target: production
     container_name: landing-backend-prod
+    command: sh -c "npx prisma migrate deploy && node dist/main"
     restart: always
     ports:
       - "${BACKEND_PORT_HOST:-4000}:4000"
