@@ -28,7 +28,7 @@ CMD ["npm", "run", "start:dev"]
 # Build target
 FROM base AS build
 RUN npm run build
-RUN npm prune --production
+RUN npm prune --production --legacy-peer-deps
 
 # Production target
 FROM node:20-alpine AS production
