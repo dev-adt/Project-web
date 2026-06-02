@@ -1,0 +1,62 @@
+# ==============================================================================
+# Monorepo Git Ignore Configurations - Landing Builder Platform
+# ==============================================================================
+
+# 1. Environment Secrets & Configs
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+!.env.example
+
+# 2. Package Dependencies
+node_modules/
+/backend/node_modules/
+/frontend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# 3. Build & Compilation Outputs
+/backend/dist/
+/frontend/.next/
+/frontend/out/
+build/
+dist/
+.tscbuildinfo
+*.tsbuildinfo
+
+# 4. Storage & Persistence Mounts
+/postgres/data/
+/redis/data/
+/minio/data/
+/storage/
+minio_data/
+postgres_data/
+redis_data/
+
+# 5. Production Logs
+/logs/
+*.log
+logs/
+
+# 6. Database Backups (Keep backup shell scripts, ignore gzip outputs)
+/backups/postgres/*.sql.gz
+/backups/minio/*.tar.gz
+backups/postgres/backup_*.sql.gz
+backups/minio/minio_backup_*.tar.gz
+
+# 7. IDE & System Files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db

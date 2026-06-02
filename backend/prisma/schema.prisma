@@ -1,0 +1,454 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  email         String         @unique
+  username      String         @unique
+  passwordHash  String         @map("password_hash")
+  fullName      String         @map("full_name")
+  avatar        String?
+  phone         String?
+  status        String         @default("active") // active, inactive, suspended
+  lastLoginAt   DateTime?      @map("last_login_at")
+  
+  // Relations
+  userRoles     UserRole[]
+  refreshTokens RefreshToken[]
+  
+  // Audits
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  deletedAt     DateTime?      @map("deleted_at")
+  createdBy     String?        @db.Uuid @map("created_by")
+  updatedBy     String?        @db.Uuid @map("updated_by")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  revoked   Boolean  @default(false)
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Audits
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("refresh_tokens")
+}
+
+model Role {
+  id              String           @id @default(uuid()) @db.Uuid
+  name            String           @unique
+  description     String?
+  
+  // Relations
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  // Audits
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  deletedAt       DateTime?        @map("deleted_at")
+  createdBy       String?          @db.Uuid @map("created_by")
+  updatedBy       String?          @db.Uuid @map("updated_by")
+
+  @@map("roles")
+}
+
+model Permission {
+  id              String           @id @default(uuid()) @db.Uuid
+  code            String           @unique
+  name            String
+  description     String?
+
+  // Relations
+  rolePermissions RolePermission[]
+
+  // Audits
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  deletedAt       DateTime?        @map("deleted_at")
+  createdBy       String?          @db.Uuid @map("created_by")
+  updatedBy       String?          @db.Uuid @map("updated_by")
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid @map("role_id")
+  permissionId String     @db.Uuid @map("permission_id")
+
+  // Relations
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId String @db.Uuid @map("user_id")
+  roleId String @db.Uuid @map("role_id")
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model SeoMetadata {
+  id              String    @id @default(uuid()) @db.Uuid
+  metaTitle       String?   @map("meta_title")
+  metaDescription String?   @map("meta_description")
+  metaKeywords    String?   @map("meta_keywords")
+  ogTitle         String?   @map("og_title")
+  ogDescription   String?   @map("og_description")
+  ogImage         String?   @map("og_image")
+  canonicalUrl    String?   @map("canonical_url")
+  schemaJson      Json?     @map("schema_json")
+
+  // Relations
+  pages           Page[]
+  posts           Post[]
+
+  @@map("seo_metadata")
+}
+
+model Page {
+  id           String        @id @default(uuid()) @db.Uuid
+  title        String
+  slug         String        @unique
+  status       String        @default("draft") // draft, published, archived
+  templateId   String?       @db.Uuid @map("template_id")
+  seoId        String?       @db.Uuid @map("seo_id")
+
+  // Relations
+  seo          SeoMetadata?  @relation(fields: [seoId], references: [id], onDelete: SetNull)
+  sections     PageSection[]
+  versions     PageVersion[]
+  views        PageView[]
+
+  // Audits
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  deletedAt    DateTime?     @map("deleted_at")
+  createdBy    String?       @db.Uuid @map("created_by")
+  updatedBy    String?       @db.Uuid @map("updated_by")
+
+  @@map("pages")
+}
+
+model PageSection {
+  id           String    @id @default(uuid()) @db.Uuid
+  pageId       String    @db.Uuid @map("page_id")
+  sectionType  String    @map("section_type")
+  position     Int
+  settingsJson Json      @map("settings_json")
+  isActive     Boolean   @default(true) @map("is_active")
+
+  // Relations
+  page         Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  // Audits
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+  createdBy    String?   @db.Uuid @map("created_by")
+  updatedBy    String?   @db.Uuid @map("updated_by")
+
+  @@map("page_sections")
+}
+
+model PageVersion {
+  id            String   @id @default(uuid()) @db.Uuid
+  pageId        String   @db.Uuid @map("page_id")
+  versionNumber Int      @map("version_number")
+  layoutJson    Json     @map("layout_json")
+  changeNote    String?  @map("change_note")
+
+  // Relations
+  page          Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  // Audits
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("page_versions")
+}
+
+model MediaFolder {
+  id        String        @id @default(uuid()) @db.Uuid
+  name      String
+  parentId  String?       @db.Uuid @map("parent_id")
+
+  // Relations
+  parent    MediaFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  MediaFolder[] @relation("FolderHierarchy")
+  files     MediaFile[]
+
+  // Audits
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  deletedAt DateTime?     @map("deleted_at")
+  createdBy String?       @db.Uuid @map("created_by")
+  updatedBy String?       @db.Uuid @map("updated_by")
+
+  @@map("media_folders")
+}
+
+model MediaFile {
+  id              String       @id @default(uuid()) @db.Uuid
+  folderId        String?      @db.Uuid @map("folder_id")
+  filename        String
+  filePath        String       @map("file_path")
+  mimeType        String       @map("mime_type")
+  fileSize        Int          @map("file_size")
+  storageProvider String       @default("minio") @map("storage_provider")
+
+  // Relations
+  folder          MediaFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  // Audits
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  deletedAt       DateTime?    @map("deleted_at")
+  createdBy       String?      @db.Uuid @map("created_by")
+  updatedBy       String?      @db.Uuid @map("updated_by")
+
+  @@map("media_files")
+}
+
+model Category {
+  id             String         @id @default(uuid()) @db.Uuid
+  name           String
+  slug           String         @unique
+  description    String?
+
+  // Relations
+  postCategories PostCategory[]
+
+  // Audits
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  deletedAt      DateTime?      @map("deleted_at")
+  createdBy      String?        @db.Uuid @map("created_by")
+  updatedBy      String?        @db.Uuid @map("updated_by")
+
+  @@map("categories")
+}
+
+model Tag {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String    @unique
+
+  // Relations
+  postTags  PostTag[]
+
+  // Audits
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdBy String?   @db.Uuid @map("created_by")
+  updatedBy String?   @db.Uuid @map("updated_by")
+
+  @@map("tags")
+}
+
+model Post {
+  id            String         @id @default(uuid()) @db.Uuid
+  title         String
+  slug          String         @unique
+  excerpt       String?
+  content       String         @db.Text
+  featuredImage String?        @map("featured_image")
+  status        String         @default("draft") // draft, review, published, archived
+  authorId      String?        @db.Uuid @map("author_id")
+  publishedAt   DateTime?      @map("published_at")
+  seoId         String?        @db.Uuid @map("seo_id")
+
+  // Relations
+  seo           SeoMetadata?   @relation(fields: [seoId], references: [id], onDelete: SetNull)
+  postCategories PostCategory[]
+  postTags      PostTag[]
+
+  // Audits
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  deletedAt     DateTime?      @map("deleted_at")
+  createdBy     String?        @db.Uuid @map("created_by")
+  updatedBy     String?        @db.Uuid @map("updated_by")
+
+  @@map("posts")
+}
+
+model PostCategory {
+  postId     String   @db.Uuid @map("post_id")
+  categoryId String   @db.Uuid @map("category_id")
+
+  // Relations
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+  @@map("post_categories")
+}
+
+model PostTag {
+  postId String @db.Uuid @map("post_id")
+  tagId  String @db.Uuid @map("tag_id")
+
+  // Relations
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
+
+model Form {
+  id           String           @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String           @unique
+  description  String?
+  settingsJson Json?            @map("settings_json")
+
+  // Relations
+  fields       FormField[]
+  submissions  FormSubmission[]
+
+  // Audits
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  deletedAt    DateTime?        @map("deleted_at")
+  createdBy    String?          @db.Uuid @map("created_by")
+  updatedBy    String?          @db.Uuid @map("updated_by")
+
+  @@map("forms")
+}
+
+model FormField {
+  id           String                 @id @default(uuid()) @db.Uuid
+  formId       String                 @db.Uuid @map("form_id")
+  fieldType    String                 @map("field_type")
+  label        String
+  placeholder  String?
+  required     Boolean                @default(false)
+  position     Int
+  settingsJson Json?                  @map("settings_json")
+
+  // Relations
+  form         Form                   @relation(fields: [formId], references: [id], onDelete: Cascade)
+  values       FormSubmissionValue[]
+
+  // Audits
+  createdAt    DateTime               @default(now()) @map("created_at")
+  updatedAt    DateTime               @updatedAt @map("updated_at")
+  deletedAt    DateTime?              @map("deleted_at")
+  createdBy    String?                @db.Uuid @map("created_by")
+  updatedBy    String?                @db.Uuid @map("updated_by")
+
+  @@map("form_fields")
+}
+
+model FormSubmission {
+  id          String                 @id @default(uuid()) @db.Uuid
+  formId      String                 @db.Uuid @map("form_id")
+  ipAddress   String?                @map("ip_address")
+  userAgent   String?                @map("user_agent")
+  submittedAt DateTime               @default(now()) @map("submitted_at")
+
+  // Relations
+  form        Form                   @relation(fields: [formId], references: [id], onDelete: Cascade)
+  values      FormSubmissionValue[]
+
+  // Audits
+  createdAt   DateTime               @default(now()) @map("created_at")
+  updatedAt   DateTime               @updatedAt @map("updated_at")
+  deletedAt   DateTime?              @map("deleted_at")
+
+  @@map("form_submissions")
+}
+
+model FormSubmissionValue {
+  id           String         @id @default(uuid()) @db.Uuid
+  submissionId String         @db.Uuid @map("submission_id")
+  fieldId      String         @db.Uuid @map("field_id")
+  value        String         @db.Text
+
+  // Relations
+  submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  field        FormField      @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  // Audits
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  @@map("form_submission_values")
+}
+
+model PageView {
+  id        String   @id @default(uuid()) @db.Uuid
+  pageId    String?  @db.Uuid @map("page_id")
+  visitorId String?  @map("visitor_id")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  referer   String?  @map("referer")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  page      Page?    @relation(fields: [pageId], references: [id], onDelete: SetNull)
+
+  @@map("page_views")
+}
+
+model Plugin {
+  id           String          @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String          @unique
+  description  String?
+  version      String          @default("1.0.0")
+  enabled      Boolean         @default(false)
+  settingsJson Json            @default("{}") @map("settings_json")
+
+  // Relations
+  settings     PluginSetting[]
+
+  // Audits
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  deletedAt    DateTime?       @map("deleted_at")
+  createdBy    String?         @db.Uuid @map("created_by")
+  updatedBy    String?         @db.Uuid @map("updated_by")
+
+  @@map("plugins")
+}
+
+model PluginSetting {
+  id       String @id @default(uuid()) @db.Uuid
+  pluginId String @db.Uuid @map("plugin_id")
+  key      String
+  value    String
+
+  // Relations
+  plugin   Plugin @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+
+  @@unique([pluginId, key])
+  @@map("plugin_settings")
+}
+
