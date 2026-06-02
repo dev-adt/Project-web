@@ -75,7 +75,7 @@ services:
       retries: 5
 
   minio-init:
-    image: minio/mc:RELEASE.2024-04-18T16-58-47Z
+    image: minio/mc:latest
     container_name: landing-minio-init-prod
     depends_on:
       minio:
