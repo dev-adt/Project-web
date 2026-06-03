@@ -28,6 +28,7 @@ CMD ["npm", "run", "start:dev"]
 # Build target
 FROM base AS build
 RUN npm run build
+RUN npx tsc prisma/seed.ts --outDir dist/prisma --module commonjs --target es2021 --skipLibCheck
 RUN npm prune --production --legacy-peer-deps
 
 # Production target

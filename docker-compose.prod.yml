@@ -104,7 +104,7 @@ services:
       dockerfile: Dockerfile
       target: production
     container_name: landing-backend-prod
-    command: sh -c "npx prisma db push && node dist/main"
+    command: sh -c "npx prisma db push && node dist/prisma/seed.js && node dist/main"
     restart: always
     ports:
       - "${BACKEND_PORT_HOST:-4000}:4000"
