@@ -46,6 +46,22 @@ export default function SeoDashboardPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const getHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('jwt') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
+  const handleUnauthorized = (status: number) => {
+    if (status === 401 || status === 403) {
+      alert('Vui lòng đăng nhập bằng quyền Admin hoặc Editor để thực hiện thao tác này.');
+      router.push('/');
+    }
+  };
+
   // Load SEO details
   useEffect(() => {
     async function loadSeoData() {
@@ -54,14 +70,22 @@ export default function SeoDashboardPage() {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost/api/v1';
 
         // 1. Fetch Sitemap Lists
-        const sitemapRes = await fetch(`${API_URL}/seo/sitemap`);
+        const sitemapRes = await fetch(`${API_URL}/seo/sitemap`, {
+          headers: getHeaders(),
+        });
+        if (sitemapRes.status === 401 || sitemapRes.status === 403) {
+          handleUnauthorized(sitemapRes.status);
+          return;
+        }
         const sitemapJson = await sitemapRes.json();
         if (sitemapJson.success && sitemapJson.data) {
           setSitemapLinks(sitemapJson.data.links || []);
         }
 
         // 2. Fetch Robots configurations
-        const robotsRes = await fetch(`${API_URL}/seo/robots`);
+        const robotsRes = await fetch(`${API_URL}/seo/robots`, {
+          headers: getHeaders(),
+        });
         const robotsJson = await robotsRes.json();
         if (robotsJson.success && robotsJson.data) {
           setRobotsRules(robotsJson.data.rules || []);
@@ -86,12 +110,17 @@ export default function SeoDashboardPage() {
 
       const res = await fetch(`${API_URL}/seo/robots`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify({
           rules: robotsRules,
           sitemap: robotsSitemap
         })
       });
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized(res.status);
+        return;
+      }
 
       const json = await res.json();
       if (json.success) {

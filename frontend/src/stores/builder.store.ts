@@ -58,13 +58,20 @@ export const useBuilderStore = create<BuilderState>((set, get) => {
     loadPage: async (pageId) => {
       try {
         set({ saving: true });
+        
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('jwt') : null;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         // Retrieve page settings first
-        const pageRes = await fetch(`/api/v1/pages/${pageId}`);
+        const pageRes = await fetch(`/api/v1/pages/${pageId}`, { headers });
         if (!pageRes.ok) throw new Error('Failed to retrieve page metadata.');
         const pageData = await pageRes.json();
 
         // Retrieve sections layout
-        const layoutRes = await fetch(`/api/v1/pages/${pageId}/layout`);
+        const layoutRes = await fetch(`/api/v1/pages/${pageId}/layout`, { headers });
         if (!layoutRes.ok) throw new Error('Failed to retrieve page layout.');
         const layoutData = await layoutRes.json();
 
@@ -90,11 +97,18 @@ export const useBuilderStore = create<BuilderState>((set, get) => {
 
       try {
         set({ saving: true });
+        
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('jwt') : null;
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const res = await fetch(`/api/v1/pages/${pageId}/layout`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             sections: sections.map((sec, idx) => ({
               sectionType: sec.sectionType,

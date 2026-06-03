@@ -36,11 +36,21 @@ export default function BuilderPage({ params }: { params: Promise<{ pageId: stri
     }
   }, [pageId, loadPage]);
 
+  const getHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('jwt') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
   const handleRestoreVersion = async (versionId: string) => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost/api/v1';
       const res = await fetch(`${API_URL}/pages/${pageId}/versions/${versionId}/restore`, {
-        method: 'POST'
+        method: 'POST',
+        headers: getHeaders(),
       });
       const json = await res.json();
       

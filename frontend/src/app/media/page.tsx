@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Folder,
   File,
@@ -37,6 +38,7 @@ interface FileItem {
 }
 
 export default function MediaExplorer() {
+  const router = useRouter();
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | 'root'>('root');
@@ -46,11 +48,36 @@ export default function MediaExplorer() {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
 
+  const getHeaders = (isMultipart = false) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('jwt') : null;
+    const headers: Record<string, string> = {};
+    if (!isMultipart) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
+  const handleUnauthorized = (status: number) => {
+    if (status === 401 || status === 403) {
+      alert('Vui lòng đăng nhập bằng quyền Admin hoặc Editor để thực hiện thao tác này.');
+      router.push('/');
+    }
+  };
+
   // Load directories and files
   const loadMedia = async () => {
     try {
       const parentQuery = currentFolderId === 'root' ? '' : `?parentId=${currentFolderId}`;
-      const folderRes = await fetch(`/api/v1/media/folders${parentQuery}`);
+      const folderRes = await fetch(`/api/v1/media/folders${parentQuery}`, {
+        headers: getHeaders(),
+      });
+      if (folderRes.status === 401 || folderRes.status === 403) {
+        handleUnauthorized(folderRes.status);
+        return;
+      }
       if (folderRes.ok) {
         const folderData = await folderRes.json();
         setFolders(folderData.data || []);
@@ -58,7 +85,9 @@ export default function MediaExplorer() {
 
       const fileQuery = currentFolderId === 'root' ? '?folderId=root' : `?folderId=${currentFolderId}`;
       const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
-      const fileRes = await fetch(`/api/v1/media${fileQuery}${searchParam}`);
+      const fileRes = await fetch(`/api/v1/media${fileQuery}${searchParam}`, {
+        headers: getHeaders(),
+      });
       if (fileRes.ok) {
         const fileData = await fileRes.json();
         setFiles(fileData.data || []);
@@ -79,12 +108,17 @@ export default function MediaExplorer() {
     try {
       const res = await fetch('/api/v1/media/folders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify({
           name,
           parentId: currentFolderId === 'root' ? undefined : currentFolderId,
         }),
       });
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized(res.status);
+        return;
+      }
 
       if (res.ok) {
         loadMedia();
@@ -111,10 +145,17 @@ export default function MediaExplorer() {
       setUploading(true);
       const res = await fetch('/api/v1/media/upload', {
         method: 'POST',
+        headers: getHeaders(true),
         body: formData,
       });
 
       setUploading(false);
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized(res.status);
+        return;
+      }
+
       if (res.ok) {
         loadMedia();
       } else {
@@ -131,7 +172,14 @@ export default function MediaExplorer() {
     try {
       const res = await fetch(`/api/v1/media/${id}`, {
         method: 'DELETE',
+        headers: getHeaders(),
       });
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized(res.status);
+        return;
+      }
+
       if (res.ok) {
         loadMedia();
       } else {
