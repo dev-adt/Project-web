@@ -21,6 +21,7 @@ model User {
   // Relations
   userRoles     UserRole[]
   refreshTokens RefreshToken[]
+  activityLogs  ActivityLog[]
   
   // Audits
   createdAt     DateTime       @default(now()) @map("created_at")
@@ -525,5 +526,21 @@ model PageBlockLink {
 
   @@map("page_block_links")
 }
+
+model ActivityLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid @map("user_id")
+  action    String
+  details   String   @db.Text
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("activity_logs")
+}
+
 
 

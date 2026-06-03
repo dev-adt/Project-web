@@ -16,6 +16,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { PluginsModule } from './modules/plugins/plugins.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { BlocksModule } from './modules/blocks/blocks.module';
+import { ActivityLogsModule } from './modules/activity-logs/activity-logs.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -34,9 +36,10 @@ import { BlocksModule } from './modules/blocks/blocks.module';
     PluginsModule,
     TemplatesModule,
     BlocksModule,
+    ActivityLogsModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
-

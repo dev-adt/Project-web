@@ -27,6 +27,7 @@ import {
   Globe,
   Settings,
   BookOpen,
+  Activity,
 } from 'lucide-react';
 
 interface ServiceStatus {
@@ -572,6 +573,23 @@ export default function Home() {
                   <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
                 </button>
 
+                {/* Forms Link */}
+                <button
+                  onClick={() => router.push('/forms')}
+                  className="flex items-center justify-between p-3 rounded-xl border border-zinc-850 hover:border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 transition-all text-left group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-zinc-850 text-zinc-400 group-hover:text-violet-400 transition-colors">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-zinc-300 group-hover:text-white">Quản lý Biểu mẫu</h4>
+                      <p className="text-[10px] text-zinc-500">Form Builder và phản hồi khách hàng</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
+                </button>
+
                 {/* Plugins Link */}
                 <button
                   onClick={() => router.push('/plugins')}
@@ -618,6 +636,23 @@ export default function Home() {
                     <div>
                       <h4 className="text-xs font-bold text-zinc-300 group-hover:text-white">Báo cáo Analytics</h4>
                       <p className="text-[10px] text-zinc-500">Biểu mẫu và phễu chuyển đổi</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
+                </button>
+
+                {/* Activity Logs Link */}
+                <button
+                  onClick={() => router.push('/activity-logs')}
+                  className="flex items-center justify-between p-3 rounded-xl border border-zinc-850 hover:border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 transition-all text-left group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-zinc-850 text-zinc-400 group-hover:text-violet-400 transition-colors">
+                      <Activity className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-zinc-300 group-hover:text-white">Nhật ký Hoạt động</h4>
+                      <p className="text-[10px] text-zinc-500">Giám sát vết hệ thống (Audit trail)</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
