@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useBuilderStore } from '../../stores/builder.store';
 import { ComponentRegistry } from './ComponentRegistry';
-import { Settings, Sliders, Trash2, Plus, ArrowUp, ArrowDown } from 'lucide-react';
+import { Settings, Sliders, Trash2, Plus, ArrowUp, ArrowDown, Share2 } from 'lucide-react';
 
 export const RightPanel: React.FC = () => {
   const { sections, selectedSectionId, updateSectionSettings, removeSection } = useBuilderStore();
   const [activeTab, setActiveTab] = useState<'content' | 'style'>('content');
+  const [savingBlock, setSavingBlock] = useState(false);
 
   const selectedSection = sections.find((sec) => sec.id === selectedSectionId);
 
@@ -23,11 +24,116 @@ export const RightPanel: React.FC = () => {
     );
   }
 
-  const definition = ComponentRegistry[selectedSection.sectionType];
-  const settings = selectedSection.settingsJson;
+  const isReusable = selectedSection.sectionType === 'reusable';
+  
+  const definition = isReusable
+    ? ComponentRegistry[selectedSection.settingsJson?.masterType]
+    : ComponentRegistry[selectedSection.sectionType];
 
-  const handleFieldChange = (key: string, value: any) => {
-    updateSectionSettings(selectedSection.id, { [key]: value });
+  const settings = isReusable
+    ? selectedSection.settingsJson?.masterSettings || {}
+    : selectedSection.settingsJson;
+
+  if (!definition) {
+    return (
+      <div className="w-[300px] border-l border-zinc-800 bg-zinc-950 flex flex-col h-[calc(100vh-3.5rem)] items-center justify-center p-6 text-center select-none">
+        <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Không có định nghĩa</h4>
+        <p className="text-xs text-zinc-600 mt-2 leading-relaxed font-semibold">
+          Không tìm thấy định nghĩa cấu trúc cho section này.
+        </p>
+      </div>
+    );
+  }
+
+  const handleFieldChange = async (key: string, value: any) => {
+    if (isReusable) {
+      // 1. Update state locally
+      const updatedMasterSettings = {
+        ...settings,
+        [key]: value,
+      };
+      
+      updateSectionSettings(selectedSection.id, {
+        masterSettings: updatedMasterSettings,
+      });
+
+      // 2. Sync to backend reusable block API
+      const token = localStorage.getItem('token');
+      const blockId = selectedSection.settingsJson?.reusableBlockId;
+      if (token && blockId) {
+        try {
+          const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost/api/v1';
+          await fetch(`${API_URL}/blocks/${blockId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              settingsJson: updatedMasterSettings
+            })
+          });
+        } catch (err) {
+          console.error('Failed to sync reusable block:', err);
+        }
+      }
+    } else {
+      updateSectionSettings(selectedSection.id, { [key]: value });
+    }
+  };
+
+  const handleSaveAsReusable = async () => {
+    const name = prompt('Nhập tên cho Block dùng chung mới này (ví dụ: Header chính):');
+    if (!name || !name.trim()) return;
+
+    try {
+      setSavingBlock(true);
+      const token = localStorage.getItem('token');
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost/api/v1';
+      
+      const res = await fetch(`${API_URL}/blocks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          type: selectedSection.sectionType,
+          settingsJson: selectedSection.settingsJson
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.data) {
+        const newBlock = data.data;
+        const updatedSections = sections.map(sec => {
+          if (sec.id === selectedSection.id) {
+            return {
+              ...sec,
+              sectionType: 'reusable',
+              settingsJson: {
+                reusableBlockId: newBlock.id,
+                masterType: selectedSection.sectionType,
+                masterSettings: selectedSection.settingsJson,
+                blockName: name.trim()
+              }
+            };
+          }
+          return sec;
+        });
+        
+        useBuilderStore.setState({ sections: updatedSections });
+        alert('Đã lưu thành Block dùng chung thành công!');
+      } else {
+        alert(data.message || 'Lỗi tạo block dùng chung.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Lỗi kết nối khi lưu block.');
+    } finally {
+      setSavingBlock(false);
+    }
   };
 
   // Helper to handle list array items
@@ -46,6 +152,7 @@ export const RightPanel: React.FC = () => {
     const items = (settings.items || []).filter((_: any, idx: number) => idx !== index);
     handleFieldChange('items', items);
   };
+
 
   return (
     <div className="w-[300px] border-l border-zinc-800 bg-zinc-950 flex flex-col h-[calc(100vh-3.5rem)] select-none">
@@ -96,6 +203,23 @@ export const RightPanel: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
         {activeTab === 'content' ? (
           <>
+            {/* Reusable warning / save action */}
+            {isReusable ? (
+              <div className="bg-violet-950/20 border border-violet-900/50 rounded-xl p-3 text-[11px] text-violet-400 leading-relaxed mb-1">
+                ✨ <strong>Block dùng chung (Shared Block)</strong>
+                <p className="mt-1 opacity-80">Thay đổi sẽ đồng bộ trên toàn bộ tất cả trang sử dụng block này.</p>
+              </div>
+            ) : (
+              <button
+                onClick={handleSaveAsReusable}
+                disabled={savingBlock}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-violet-600/10 hover:bg-violet-600/20 text-violet-400 border border-violet-500/20 font-bold text-xs transition-all duration-200 mb-1"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                {savingBlock ? 'Đang lưu block...' : 'Lưu thành Block dùng chung'}
+              </button>
+            )}
+
             {/* Render direct input fields */}
             {Object.entries(definition.fields.content).map(([key, field]) => (
               <div key={key} className="flex flex-col gap-1.5">

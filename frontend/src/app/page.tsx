@@ -26,6 +26,7 @@ import {
   Puzzle,
   Globe,
   Settings,
+  BookOpen,
 } from 'lucide-react';
 
 interface ServiceStatus {
@@ -84,6 +85,25 @@ export default function Home() {
   const [createError, setCreateError] = useState('');
   const [isCreatingPage, setIsCreatingPage] = useState(false);
 
+  // Templates State
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await fetch('/api/v1/templates', {
+        headers: getHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const list = data.success ? data.data.templates : data.templates;
+        setTemplates(Array.isArray(list) ? list : []);
+      }
+    } catch (err) {
+      console.error('Error fetching templates:', err);
+    }
+  };
+
   const getHeaders = () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('jwt') : null;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -137,6 +157,7 @@ export default function Home() {
         
         // Fetch pages list
         fetchPages();
+        fetchTemplates();
       } else {
         // Token stale or invalid
         handleLogout();
@@ -228,7 +249,11 @@ export default function Home() {
 
     try {
       setIsCreatingPage(true);
-      const res = await fetch('/api/v1/pages', {
+      const url = selectedTemplateId
+        ? `/api/v1/templates/${selectedTemplateId}/create-page`
+        : '/api/v1/pages';
+
+      const res = await fetch(url, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ title: pageTitle, slug: pageSlug }),
@@ -242,6 +267,7 @@ export default function Home() {
         setIsCreateOpen(false);
         setPageTitle('');
         setPageSlug('');
+        setSelectedTemplateId('');
         // Redirect directly into the visual page builder editor
         router.push(`/builder/${createdPage.id}`);
       } else {
@@ -596,6 +622,23 @@ export default function Home() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
                 </button>
+
+                {/* Blog Link */}
+                <button
+                  onClick={() => router.push('/blog')}
+                  className="flex items-center justify-between p-3 rounded-xl border border-zinc-850 hover:border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 transition-all text-left group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-zinc-850 text-zinc-400 group-hover:text-violet-400 transition-colors">
+                      <BookOpen className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-zinc-300 group-hover:text-white">Hệ thống Blog</h4>
+                      <p className="text-[10px] text-zinc-500">Quản lý bài viết, chuyên mục, tags</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
+                </button>
               </div>
             </div>
           </div>
@@ -763,6 +806,27 @@ export default function Home() {
                 />
                 <span className="text-[10px] text-zinc-500 block leading-tight mt-1">
                   Đường dẫn URL công khai sẽ có dạng: http://adtweb.edunow.today/{pageSlug || 'slug'}
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-450 uppercase tracking-wide">
+                  Mẫu Giao Diện (Template)
+                </label>
+                <select
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-violet-500 transition-colors"
+                >
+                  <option value="">Trang trống (Blank Page)</option>
+                  {templates.map((temp) => (
+                    <option key={temp.id} value={temp.id}>
+                      {temp.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[10px] text-zinc-500 block leading-tight mt-1">
+                  Chọn một mẫu để khởi tạo nhanh cấu trúc các Section mẫu.
                 </span>
               </div>
 

@@ -142,6 +142,8 @@ model Page {
   sections     PageSection[]
   versions     PageVersion[]
   views        PageView[]
+  template     Template?     @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  blockLinks   PageBlockLink[]
 
   // Audits
   createdAt    DateTime      @default(now()) @map("created_at")
@@ -451,4 +453,77 @@ model PluginSetting {
   @@unique([pluginId, key])
   @@map("plugin_settings")
 }
+
+model Template {
+  id          String            @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  thumbnail   String?
+  sections    TemplateSection[]
+  pages       Page[]
+
+  // Audits
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  deletedAt   DateTime?         @map("deleted_at")
+  createdBy   String?           @db.Uuid @map("created_by")
+  updatedBy   String?           @db.Uuid @map("updated_by")
+
+  @@map("templates")
+}
+
+model TemplateSection {
+  id          String   @id @default(uuid()) @db.Uuid
+  templateId  String   @db.Uuid @map("template_id")
+  sectionType String   @map("section_type")
+  position    Int
+  settingsJson Json    @map("settings_json")
+
+  // Relations
+  template    Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  // Audits
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdBy   String?   @db.Uuid @map("created_by")
+  updatedBy   String?   @db.Uuid @map("updated_by")
+
+  @@map("template_sections")
+}
+
+model ReusableBlock {
+  id           String          @id @default(uuid()) @db.Uuid
+  name         String
+  type         String
+  settingsJson Json            @map("settings_json")
+  links        PageBlockLink[]
+
+  // Audits
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  deletedAt    DateTime?       @map("deleted_at")
+  createdBy    String?         @db.Uuid @map("created_by")
+  updatedBy    String?         @db.Uuid @map("updated_by")
+
+  @@map("reusable_blocks")
+}
+
+model PageBlockLink {
+  id        String        @id @default(uuid()) @db.Uuid
+  pageId    String        @db.Uuid @map("page_id")
+  blockId   String        @db.Uuid @map("block_id")
+  position  Int
+
+  // Relations
+  page      Page          @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  block     ReusableBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  // Audits
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@map("page_block_links")
+}
+
 

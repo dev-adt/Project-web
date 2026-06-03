@@ -14,6 +14,8 @@ import { FormsModule } from './modules/forms/forms.module';
 import { SeoModule } from './modules/seo/seo.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { PluginsModule } from './modules/plugins/plugins.module';
+import { TemplatesModule } from './modules/templates/templates.module';
+import { BlocksModule } from './modules/blocks/blocks.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { PluginsModule } from './modules/plugins/plugins.module';
     SeoModule,
     AnalyticsModule,
     PluginsModule,
+    TemplatesModule,
+    BlocksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

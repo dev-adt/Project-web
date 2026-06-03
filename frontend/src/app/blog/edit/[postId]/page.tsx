@@ -90,16 +90,18 @@ export default function EditPostPage({ params }: { params: Promise<{ postId: str
       try {
         setLoading(true);
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost/api/v1';
+        const token = localStorage.getItem('token');
+        const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
 
         // 1. Fetch Categories
-        const catRes = await fetch(`${API_URL}/categories`);
+        const catRes = await fetch(`${API_URL}/categories`, { headers });
         const catJson = await catRes.json();
         if (catJson.success && catJson.data) {
           setCategories(catJson.data.categories || []);
         }
 
         // 2. Fetch Tags
-        const tagRes = await fetch(`${API_URL}/tags`);
+        const tagRes = await fetch(`${API_URL}/tags`, { headers });
         const tagJson = await tagRes.json();
         if (tagJson.success && tagJson.data) {
           setTags(tagJson.data.tags || []);
@@ -107,7 +109,7 @@ export default function EditPostPage({ params }: { params: Promise<{ postId: str
 
         // 3. Fetch Post Details (If not creating new)
         if (postId && postId !== 'new') {
-          const postRes = await fetch(`${API_URL}/posts/${postId}`);
+          const postRes = await fetch(`${API_URL}/posts/${postId}`, { headers });
           const postJson = await postRes.json();
           if (postJson.success && postJson.data) {
             const p: Post = postJson.data;
@@ -146,6 +148,12 @@ export default function EditPostPage({ params }: { params: Promise<{ postId: str
       else setSaving(true);
 
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost/api/v1';
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      };
+
       const payload = {
         title,
         slug,
@@ -166,13 +174,13 @@ export default function EditPostPage({ params }: { params: Promise<{ postId: str
       if (postId === 'new') {
         res = await fetch(`${API_URL}/posts`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(payload),
         });
       } else {
         res = await fetch(`${API_URL}/posts/${postId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(payload),
         });
       }
